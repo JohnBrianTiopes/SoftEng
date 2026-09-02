@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Memento Pattern</title>
+  </head>
+  <body>
+    <div id="app" style="padding: 20px; font-family: sans-serif;">
+      <h2>Character Customization</h2>
+      
+      <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+        <button id="equip-sword">Equip Steel Sword</button>
+        <button id="equip-axe">Equip Battle Axe</button>
+        <button id="dye-red">Dye Armor Red</button>
+        <button id="undo" disabled style="background: #ffcccc;">Undo Last Change</button>
+      </div>
+
+      <div style="padding: 20px; border: 2px solid #333; border-radius: 8px;">
+        <h3>Live Avatar Preview:</h3>
+        <p id="char-weapon">Weapon: Loading...</p>
+        <p id="char-color">Armor Color: Loading...</p>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
