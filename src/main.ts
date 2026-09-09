@@ -1,135 +1,95 @@
 import './style.css';
+import { CharacterBuilder, CustomizationHistory, DEFAULT_CHARACTER_STATE } from './memento.ts';
+import { buildLayout, refreshUI, showToast } from './ui.ts';
+import type { CatalogCategory } from './items.ts';
+import { preloadAllThumbnails } from './three/thumbnails.ts';
+import { createScene3D } from './three/sceneSetup.ts';
+import { CharacterController } from './three/characterController.ts';
 
 // ==========================================
-// The Data Structure
+// Originator + Caretaker (Memento pattern)
 // ==========================================
-interface CharacterState {
-  weapon: string;
-  armorColor: string;
-}
-
-// ==========================================
-// 1. MEMENTO (The Time Capsule)
-// ==========================================
-class CharacterSnapshot {
-  private readonly state: CharacterState;
-
-  constructor(stateToSave: CharacterState) {
-    // We create a clone of the state so it cannot be accidentally modified
-    this.state = { ...stateToSave };
-  }
-
-  public getSavedState(): CharacterState {
-    return this.state;
-  }
-}
-
-// ==========================================
-// 2. ORIGINATOR (The Character Editor)
-// ==========================================
-class CharacterBuilder {
-  private currentState: CharacterState;
-
-  constructor() {
-    this.currentState = { weapon: 'Wooden Stick', armorColor: 'Grey' };
-  }
-
-  public equipWeapon(weapon: string): void {
-    this.currentState.weapon = weapon;
-  }
-
-  public dyeArmor(color: string): void {
-    this.currentState.armorColor = color;
-  }
-
-  public getState(): CharacterState {
-    return this.currentState;
-  }
-
-  // ORIGINATOR creates a Memento of its own state
-  public save(): CharacterSnapshot {
-    return new CharacterSnapshot(this.currentState);
-  }
-
-  // ORIGINATOR uses a Memento to overwrite its current state
-  public restore(memento: CharacterSnapshot): void {
-    this.currentState = memento.getSavedState();
-  }
-}
-
-// ==========================================
-// 3. CARETAKER (The Undo Manager)
-// ==========================================
-class CustomizationHistory {
-  private builder: CharacterBuilder;
-  private undoStack: CharacterSnapshot[] = [];
-
-  constructor(builder: CharacterBuilder) {
-    this.builder = builder;
-  }
-
-  // Saves a backup BEFORE a change is made
-  public backup(): void {
-    this.undoStack.push(this.builder.save());
-  }
-
-  // Pops the last backup and restores it
-  public undo(): void {
-    if (this.undoStack.length === 0) return;
-    
-    const lastSnapshot = this.undoStack.pop();
-    if (lastSnapshot) {
-      this.builder.restore(lastSnapshot);
-    }
-  }
-
-  public hasHistory(): boolean {
-    return this.undoStack.length > 0;
-  }
-}
-
-// ==========================================
-// DOM Interaction & Application Execution
-// ==========================================
-const builder = new CharacterBuilder();
+const builder = new CharacterBuilder(DEFAULT_CHARACTER_STATE);
 const history = new CustomizationHistory(builder);
 
-const weaponText = document.getElementById('char-weapon')!;
-const colorText = document.getElementById('char-color')!;
-const undoBtn = document.getElementById('undo') as HTMLButtonElement;
+const app = document.getElementById('app')!;
+const character = new CharacterController();
 
-function updateUI() {
+function render(): void {
   const state = builder.getState();
-  weaponText.textContent = `Weapon: ${state.weapon}`;
-  colorText.textContent = `Armor Color: ${state.armorColor}`;
-  
-  // Enable or disable the undo button based on history
-  undoBtn.disabled = !history.hasHistory();
+  character.update(state);
+  refreshUI(uiRefs, state, history.hasHistory());
 }
 
-// Event Listeners for UI Buttons
-document.getElementById('equip-sword')!.addEventListener('click', () => {
-  history.backup(); // 1. Save state BEFORE changing
-  builder.equipWeapon('Steel Sword'); // 2. Make the change
-  updateUI(); // 3. Update the screen
+function applyChange(mutate: (b: CharacterBuilder) => void): void {
+  history.backup(); // 1. Save current state through the Memento system
+  mutate(builder); // 2. Change the state
+  render(); // 3. Update the UI
+}
+
+const uiRefs = buildLayout(app, {
+  onNameChange: (name: string) => applyChange((b) => b.setName(name || 'RUNE')),
+  onSelectItem: (categoryKey: CatalogCategory['key'], itemId: string) => {
+    applyChange((b) => {
+      switch (categoryKey) {
+        case 'hair':
+          b.setHair(itemId);
+          break;
+        case 'face':
+          b.setFace(itemId);
+          break;
+        case 'outfit':
+          b.equipOutfit(itemId);
+          break;
+        case 'pants':
+          b.equipPants(itemId);
+          break;
+        case 'shoes':
+          b.equipShoes(itemId);
+          break;
+        case 'weapon':
+          b.equipWeapon(itemId);
+          break;
+        case 'accessory':
+          b.equipAccessory(itemId);
+          break;
+        case 'armorColor':
+          b.dyeArmor(itemId);
+          break;
+      }
+    });
+  },
+  onReset: () => {
+    history.backup();
+    builder.resetToDefault();
+    render();
+    showToast(uiRefs, 'Reset!');
+  },
+  onUndo: () => {
+    history.undo();
+    render();
+  },
+  onSave: () => {
+    showToast(uiRefs, 'Saved!');
+  },
 });
 
-document.getElementById('equip-axe')!.addEventListener('click', () => {
-  history.backup();
-  builder.equipWeapon('Battle Axe');
-  updateUI();
-});
+// The 3D item-card thumbnails and the live preview both use procedural
+// geometry, so we can render every thumbnail up front (cheap, all-local).
+preloadAllThumbnails();
 
-document.getElementById('dye-red')!.addEventListener('click', () => {
-  history.backup();
-  builder.dyeArmor('Red');
-  updateUI();
-});
+const previewMount = document.getElementById('preview-mount')!;
+createScene3D(previewMount).scene.add(character.group);
 
-undoBtn.addEventListener('click', () => {
-  history.undo(); // Ask Caretaker to trigger the restore
-  updateUI();
-});
+character
+  .load('/models/character.obj')
+  .then(render)
+  .catch((err) => {
+    console.error('Failed to load character model', err);
+  });
 
-// Initial render
-updateUI();
+// @ts-expect-error debug hook, removed before delivery
+window.__debugCharacter = character;
+
+// Initial UI render (before the model finishes loading, so the panels aren't blank)
+render();
