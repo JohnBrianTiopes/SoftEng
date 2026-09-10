@@ -116,11 +116,11 @@ export class CharacterController {
       this.headAccessorySlot.add(buildCrown(accessoryColor));
     } else if (state.accessory === 'Shield') {
       const shield = buildShield(accessoryColor);
-      shield.position.set(-1.5, -0.2, 0.1);
+      shield.position.set(-1.5, -0.2, 0.7);
       this.bodyAccessorySlot.add(shield);
     } else if (state.accessory === 'Cape') {
       const cape = buildCape(accessoryColor);
-      cape.position.set(0, 0.1, -0.6);
+      cape.position.set(0, -0.9, 1.1);
       this.bodyAccessorySlot.add(cape);
     }
 

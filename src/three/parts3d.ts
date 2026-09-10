@@ -46,7 +46,7 @@ export function buildHair(kind: string, colorHex: number): THREE.Group {
     }
     case 'Long': {
       g.add(box(1.2, 0.32, 1.2, colorHex, 0, 0.12, 0));
-      g.add(box(1.24, 1.1, 0.22, colorHex, 0, -0.45, 0.55));
+      g.add(box(1.24, 1.1, 0.22, colorHex, 0, -0.45, -0.55));
       break;
     }
     default: {
@@ -72,6 +72,7 @@ export function buildShield(colorHex: number): THREE.Group {
   g.name = 'shield';
   g.add(metalBox(0.14, 1.5, 1.0, colorHex));
   g.add(box(0.06, 0.4, 0.4, 0xe8b923, 0.1, 0, 0));
+  g.rotation.y = -Math.PI / 2;
   return g;
 }
 
@@ -91,35 +92,36 @@ export function buildWeapon(kind: string, colorHex: number): THREE.Group {
   g.name = 'weapon';
   switch (kind) {
     case 'Steel Sword': {
-      g.add(metalBox(0.16, 1.7, 0.05, colorHex, 0, 0.9, 0));
-      g.add(metalBox(0.5, 0.14, 0.14, 0xa97e14, 0, 0.05, 0));
-      g.add(box(0.14, 0.35, 0.14, 0x3a2c1d, 0, -0.2, 0));
+      g.add(metalBox(1.7, 0.16, 0.05, colorHex, 0.85, 0, 0));
+      g.add(metalBox(0.14, 0.5, 0.14, 0xa97e14, 0, 0, 0));
+      g.add(box(0.35, 0.14, 0.14, 0x3a2c1d, -0.2, 0, 0));
       break;
     }
     case 'Battle Axe': {
-      g.add(box(0.13, 1.6, 0.13, 0x6b4226, 0, 0.6, 0));
+      g.add(box(1.6, 0.13, 0.13, 0x6b4226, 0.8, 0, 0));
       const headGeo = new THREE.ConeGeometry(0.55, 0.7, 4);
       const axeHead = new THREE.Mesh(headGeo, new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.7, roughness: 0.3 }));
       axeHead.rotation.z = Math.PI / 2;
-      axeHead.position.set(0.35, 1.2, 0);
+      axeHead.position.set(1.55, 0, 0);
       axeHead.castShadow = true;
       g.add(axeHead);
       break;
     }
     case 'Magic Staff': {
-      g.add(box(0.12, 2.0, 0.12, 0x6b4226, 0, 0.8, 0));
+      g.add(box(2.0, 0.12, 0.12, 0x6b4226, 1.0, 0, 0));
       const orb = new THREE.Mesh(
         new THREE.SphereGeometry(0.22, 16, 16),
         new THREE.MeshStandardMaterial({ color: colorHex, emissive: colorHex, emissiveIntensity: 0.6, roughness: 0.3 }),
       );
-      orb.position.set(0, 1.9, 0);
+      orb.position.set(2.0, 0, 0);
       g.add(orb);
       break;
     }
     default: {
-      g.add(box(0.12, 1.5, 0.12, colorHex, 0, 0.65, 0));
+      g.add(box(1.5, 0.12, 0.12, colorHex, 0.75, 0, 0));
     }
   }
+  g.rotation.y = -Math.PI / 2;
   return g;
 }
 
